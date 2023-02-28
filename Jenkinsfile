@@ -1,26 +1,46 @@
-#!/usr/bin/env groovy
 pipeline {
-    agent {
-        node any
-    }
+
+    agent any
 
     stages {
-        stage('Build Image') {
-            when {
-                branch 'master'  //only run these steps on the master branch
+        
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], userRemoteConfigs: [[url: 'https://github.com/shubhshelke/micro-project.git']]])
             }
-
-            // Jenkins Stage to Build the Docker Image
-
         }
 
-        stage('Publish Image') {
-            when {
-                branch 'master'  //only run these steps on the master branch
+        stage('Dokcer Build') {
+            steps {
+                
+                sh 'docker build -t ml_app  .'
+               
             }
-            
-            // Jenkins Stage to Publish the Docker Image to Dockerhub or any Docker repository of your choice.
-
         }
+        
+        
+    stage('Login') {
+        environment { 
+                    DOCKERHUB_CREDENTIALS_PSW='dckr_pat_JNAEypaphW_2Vt4Jncj-GXWi_MY'
+                    DOCKERHUB_CREDENTIALS_USR='shubhshelke'
+                    
+                }
+
+      steps {
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+      }
     }
+    stage('Push') {
+           environment { 
+               
+                    DOCKERHUB_CREDENTIALS_USR='shubhshelke'
+                    
+                }
+      steps {
+        sh 'docker push $DOCKERHUB_CREDENTIALS_USR/ml_app:latest'
+      }
+    }
+        
+    }
+    
 }
